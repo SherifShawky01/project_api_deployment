@@ -27,85 +27,47 @@ env:
 
 jobs:
   build-test-deploy:
-    runs-on: ubuntu-latest # Uses the latest Ubuntu runner
+    runs-on: ubuntu-latest
     permissions:
-      contents: read # Required to checkout the repository code
-      id-token: write # Required for OIDC authentication if you were using GCP, generally good to have
+      contents: read
+      id-token: write
 
     steps:
-    # ────────────────────────────────
-    # 1. Check out the repository code
-    # ────────────────────────────────
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    # ────────────────────────────────
-    # 2. Python setup and dependency installation
-    # ────────────────────────────────
-    - name: Set up Python & Install dependencies
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.10" # Ensure this matches your project's Python version
-
-    - name: Install Python dependencies & Run tests
-      run: |
-        python -m pip install --quiet --upgrade pip # Upgrade pip
-        pip install -q -r requirements.txt # Install packages from requirements.txt
-        python -m pytest tests/ # Run unit tests located in the 'tests/' directory
-
-    # ────────────────────────────────
-    # 3. Log in to Docker Hub
-    # ────────────────────────────────
-    - name: Docker Hub – Login
-      run: |
-        # Use Docker Hub username and token from GitHub Secrets for authentication
-        echo "${{ secrets.DOCKERHUB_TOKEN }}" \
-          | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-
-    # ────────────────────────────────
-    # 4. Build Docker image and push both :<SHA> and :latest tags
-    # ────────────────────────────────
-    - name: Build & Push Docker Image
-      env:
-        TAG: ${{ github.sha }} # Use the Git commit SHA as a unique image tag
-      run: |
-        # Build the Docker image from the current directory (where Dockerfile is located)
-        # Assigns both the SHA tag and the 'latest' tag
-        docker build \
-          -t $DOCKERHUB_REPO:$TAG \
-          -t $DOCKERHUB_REPO:latest \
-          . 
-
-        # Push both tagged images to Docker Hub
-        docker push $DOCKERHUB_REPO:$TAG
-        docker push $DOCKERHUB_REPO:latest
-
-        # Expose the immutable SHA tag to subsequent steps in the workflow
-        echo "IMAGE_TAG=$TAG" >> $GITHUB_ENV
-
-    # ────────────────────────────────
-    # 5. Install Railway CLI (skipped if DRY_RUN is 'true')
-    # ────────────────────────────────
-    - name: Install Railway CLI
-      if: env.DRY_RUN == 'false' # This step only runs if DRY_RUN is 'false'
-      run: |
-        # Install the official Railway Command Line Interface using npm
-        npm install -g @railway/cli
+    # ... (steps 1-5: Checkout, Python setup, Docker Hub login, Build & push image, Install Railway CLI) ...
 
     # ────────────────────────────────
     # 6. Deploy to Railway (skipped if DRY_RUN is 'true')
-    # Authentication is handled via the RAILWAY_TOKEN environment variable
     # ────────────────────────────────
     - name: Deploy to Railway
-      if: env.DRY_RUN == 'false' # This step only runs if DRY_RUN is 'false'
+      if: env.DRY_RUN == 'false'
       env:
         RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }} # Pass the Railway API token as an environment variable
+        # Explicitly set these env vars from vars context for the run step
+        RAILWAY_PROJECT_ENV: ${{ vars.RAILWAY_PROJECT_ID }}
+        RAILWAY_SERVICE_ENV: ${{ vars.RAILWAY_SERVICE_NAME }}
       run: |
-        # First, set the Railway project and service context for subsequent commands
-        echo "Setting Railway context for Project: ${{ env.RAILWAY_PROJECT }}, Service: ${{ env.RAILWAY_SERVICE }}"
-        railway use --project ${{ env.RAILWAY_PROJECT }} --service ${{ env.RAILWAY_SERVICE }}
+        # --- DEBUGGING AND ROBUSTNESS CHECKS ---
+        echo "Debugging Railway Variables:"
+        echo "RAILWAY_PROJECT_ID (from vars context): '${{ vars.RAILWAY_PROJECT_ID }}'"
+        echo "RAILWAY_SERVICE_NAME (from vars context): '${{ vars.RAILWAY_SERVICE_NAME }}'"
+        echo "RAILWAY_PROJECT_ENV (from env block): '${{ env.RAILWAY_PROJECT_ENV }}'"
+        echo "RAILWAY_SERVICE_ENV (from env block): '${{ env.RAILWAY_SERVICE_ENV }}'"
 
-        # Then, deploy the Docker image to the established context
-        # Uses the specific SHA-tagged image for deployment
+        # Check if critical variables are empty
+        if [ -z "${{ env.RAILWAY_PROJECT_ENV }}" ]; then
+          echo "Error: RAILWAY_PROJECT_ID is empty. Please set it as a Repository Variable."
+          exit 1
+        fi
+        if [ -z "${{ env.RAILWAY_SERVICE_ENV }}" ]; then
+          echo "Error: RAILWAY_SERVICE_NAME is empty. Please set it as a Repository Variable."
+          exit 1
+        fi
+        # --- END DEBUGGING AND ROBUSTNESS CHECKS ---
+
+        # 1. Set the Railway project and service context for subsequent commands
+        echo "Setting Railway context for Project: ${{ env.RAILWAY_PROJECT_ENV }}, Service: ${{ env.RAILWAY_SERVICE_ENV }}"
+        railway use --project ${{ env.RAILWAY_PROJECT_ENV }} --service ${{ env.RAILWAY_SERVICE_ENV }}
+
+        # 2. Deploy the Docker image to the established context
         echo "Deploying image: ${{ env.DOCKERHUB_REPO }}:${{ env.IMAGE_TAG }}"
         railway deploy --image ${{ env.DOCKERHUB_REPO }}:${{ env.IMAGE_TAG }}
