@@ -82,25 +82,44 @@ def test_predict():
 
 
 def test_predict_invalid_data_type():
-    """Test the predict endpoint with invalid data type (e.g., string instead of float)."""
-    # This test is largely correct for Pydantic's type validation
-    input_data = {
-        "x1": "invalid",  # Invalid data type for a numerical feature
-        "y1": 0.2,
-        # ... you need to fill in ALL expected fields for a complete invalid request
-        # If your Pydantic model requires many fields, you need to provide them,
-        # even if one is invalid, to trigger the correct Pydantic validation.
-        # For simplicity in this example, I'll just show the invalid one and assume
-        # your Pydantic model for HandLandmarks is comprehensive.
-        # Add placeholder values for all other required features if testing schema validation.
+    """Test the predict endpoint with an invalid data type for a numerical field."""
+    # Create a complete set of valid data first
+    valid_data_template = {
+      "x1": 262.9130402, "y1": 229.5256154,
+      "x2": 250.8313293, "y2": 225.6459928,
+      "x3": 243.6705551, "y3": 213.6319452,
+      "x4": 241.8025589, "y4": 202.8055616,
+      "x5": 237.8146591, "y5": 194.2824285,
+      "x6": 249.8142014, "y6": 196.3489535,
+      "x7": 248.0120773, "y7": 182.3233712,
+      "x8": 247.9545135, "y8": 173.1732023,
+      "x9": 248.3393555, "y9": 165.7534064,
+      "x10": 257.554184, "y10": 194.9684608,
+      "x11": 255.6020966, "y11": 179.8632231,
+      "x12": 254.7074661, "y12": 169.8857015,
+      "x13": 254.1591797, "y13": 161.8072067,
+      "x14": 265.0940323, "y14": 196.2305138,
+      "x15": 263.2237244, "y15": 181.6690636,
+      "x16": 261.8060074, "y16": 172.7557279,
+      "x17": 260.586937, "y17": 165.1772625,
+      "x18": 272.6696091, "y18": 199.779223,
+      "x19": 271.5879593, "y19": 188.6274729,
+      "x20": 270.1034775, "y20": 181.5163569,
+      "x21": 268.3308792, "y21": 175.4415079
     }
-    # To make this a truly robust test for an incomplete or malformed request,
-    # you might send a partial dictionary or a dictionary with wrong keys.
-    # For a type error, one invalid value is enough.
+    
+    # Now, introduce the invalid data type for one field
+    input_data = valid_data_template.copy()
+    input_data["x1"] = "invalid"  # Make x1 an invalid type
+
     response = client.post("/predict", json=input_data)
-    assert response.status_code == 422  # Unprocessable Entity (Pydantic validation error)
+    assert response.status_code == 422
     assert "detail" in response.json()
-    assert "value_error" in str(response.json()["detail"]) or "type_error" in str(response.json()["detail"]) # Check for specific error message
+
+    # Check for the specific Pydantic error type for parsing floats
+    # Pydantic v2 often uses "float_parsing" for invalid number strings
+    error_details_str = str(response.json()["detail"])
+    assert "float_parsing" in error_details_str or "value_error" in error_details_str or "type_error" in error_details_str
 
 def test_predict_missing_data():
     """Test the predict endpoint with missing required data."""
@@ -108,9 +127,10 @@ def test_predict_missing_data():
     input_data = {
         "x1": 0.1,
         "y1": 0.2,
-        # Missing many other features that HandLandmarks expects
+        # Missing many other features that GesturePredictRequest expects
     }
     response = client.post("/predict", json=input_data)
-    assert response.status_code == 422 # Unprocessable Entity
+    assert response.status_code == 422
     assert "detail" in response.json()
-    assert "Field required" in str(response.json()["detail"]) # Pydantic's error for missing fields
+    # Pydantic v2 error message for missing fields often contains "Field required"
+    assert "Field required" in str(response.json()["detail"])
