@@ -84,7 +84,7 @@ jobs:
     - name: Install Railway CLI
       if: env.DRY_RUN == 'false'
       run: |
-        npm install -g railway  # Railway CLI is a Node.js package
+        npm install -g @railway/cli  # Railway CLI is a Node.js package
 
     # ────────────────────────────────
     # 6. Authenticate to Railway (skipped if DRY_RUN)
