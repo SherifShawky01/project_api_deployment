@@ -14,13 +14,13 @@ on:
 # ────────────────────────────────────────────────────────
 env:
   # Docker image name in Docker Hub (username is injected from secrets)
-  DOCKERHUB_REPO: ${{ secrets.DOCKERHUB_USERNAME }}/hand-gesture-api # Updated repo name for clarity
+  DOCKERHUB_REPO: ${{ secrets.DOCKERHUB_USERNAME }}/hand-gesture-api # Recommended: Use a repo name specific to your project
 
-  # Railway deployment variables (set as Repository Variables in GitHub)
+  # Railway deployment variables (set these as Repository Variables in GitHub)
   RAILWAY_PROJECT: ${{ vars.RAILWAY_PROJECT_ID }} # Your Railway Project ID
   RAILWAY_SERVICE: ${{ vars.RAILWAY_SERVICE_NAME }} # Your Railway Service Name (e.g., 'hand-gesture-api-service')
 
-  # Toggle: 'true'  ➜ build + push only
+  # Toggle: 'true'  ➜ build + push only (no deployment)
   #          'false' ➜ full deploy to Railway
   DRY_RUN:           ${{ vars.DRY_RUN || 'true' }} # Default to 'true' for safety
 
@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write # needed for Google Cloud if you were using it, but good to keep for general OIDC
+      id-token: write # Needed for OIDC if using Google Cloud, but generally good practice
 
     steps:
     # ────────────────────────────────
@@ -42,13 +42,13 @@ jobs:
     # ────────────────────────────────
     - uses: actions/setup-python@v5
       with:
-        python-version: "3.10" # Use a Python version consistent with your Dockerfile and requirements.txt
+        python-version: "3.10" # Ensure this matches your Dockerfile base image and local setup
 
     - name: Install deps & run tests
       run: |
         python -m pip install --quiet --upgrade pip
-        pip install -q -r requirements.txt
-        python -m pytest tests/ # Uncommented to run your tests
+        pip install -q -r requirements.txt # Installs dependencies from requirements.txt
+        python -m pytest tests/ # Runs your unit tests
 
     # ────────────────────────────────
     # 3. Login to Docker Hub
@@ -63,44 +63,41 @@ jobs:
     # ────────────────────────────────
     - name: Build & push image
       env:
-        TAG: ${{ github.sha }}
+        TAG: ${{ github.sha }} # Use Git SHA as an immutable tag
       run: |
-        # Build once, attach two tags
+        # Build once, attach two tags: SHA for immutability, latest for convenience
         docker build \
           -t $DOCKERHUB_REPO:$TAG \
           -t $DOCKERHUB_REPO:latest \
-          . # Changed context from ./app to . assuming Dockerfile is in root
+          . # Build context is the current directory (where Dockerfile is located)
 
-        # Push both tags
+        # Push both tags to Docker Hub
         docker push $DOCKERHUB_REPO:$TAG
         docker push $DOCKERHUB_REPO:latest
 
-        # Expose the immutable tag to later steps
+        # Expose the immutable tag to later steps (e.g., for deployment)
         echo "IMAGE_TAG=$TAG" >> $GITHUB_ENV
 
     # ────────────────────────────────
-    # 5. Install Railway CLI (skipped if DRY_RUN)
+    # 5. Install Railway CLI (skipped if DRY_RUN is 'true')
     # ────────────────────────────────
     - name: Install Railway CLI
       if: env.DRY_RUN == 'false'
       run: |
-        npm install -g @railway/cli  # Railway CLI is a Node.js package
+        # Install the official Railway CLI (Node.js package)
+        npm install -g @railway/cli
 
     # ────────────────────────────────
-    # 6. Authenticate to Railway (skipped if DRY_RUN)
-    # ────────────────────────────────
-    - name: Railway – login
-      if: env.DRY_RUN == 'false'
-      run: |
-        railway login --token ${{ secrets.RAILWAY_TOKEN }}
-
-    # ────────────────────────────────
-    # 7. Deploy to Railway (skipped if DRY_RUN)
+    # 6. Deploy to Railway (skipped if DRY_RUN is 'true')
+    # Authentication handled via RAILWAY_TOKEN environment variable
     # ────────────────────────────────
     - name: Deploy to Railway
       if: env.DRY_RUN == 'false'
+      env:
+        RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }} # Pass the Railway API token as an environment variable
       run: |
-        # Use the specific image tag (SHA) for deployment
+        # Deploy the Docker image to the specified Railway service and project
+        # Uses the specific image tag (SHA) for version control on Railway
         railway deploy \
           --service ${{ env.RAILWAY_SERVICE }} \
           --project ${{ env.RAILWAY_PROJECT }} \
