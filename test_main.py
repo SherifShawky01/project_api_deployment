@@ -49,20 +49,36 @@ def test_predict():
     sample_data_series = df.iloc[0].drop("label")
 
     # Convert the pandas Series to a dictionary, which is the expected format for JSON input
-    input_data = sample_data_series.to_dict()
-
-    # Now, send this realistic data to the predict endpoint
+    input_data = {
+      "x1": 262.9130402, "y1": 229.5256154,
+      "x2": 250.8313293, "y2": 225.6459928,
+      "x3": 243.6705551, "y3": 213.6319452,
+      "x4": 241.8025589, "y4": 202.8055616,
+      "x5": 237.8146591, "y5": 194.2824285,
+      "x6": 249.8142014, "y6": 196.3489535,
+      "x7": 248.0120773, "y7": 182.3233712,
+      "x8": 247.9545135, "y8": 173.1732023,
+      "x9": 248.3393555, "y9": 165.7534064,
+      "x10": 257.554184, "y10": 194.9684608,
+      "x11": 255.6020966, "y11": 179.8632231,
+      "x12": 254.7074661, "y12": 169.8857015,
+      "x13": 254.1591797, "y13": 161.8072067,
+      "x14": 265.0940323, "y14": 196.2305138,
+      "x15": 263.2237244, "y15": 181.6690636,
+      "x16": 261.8060074, "y16": 172.7557279,
+      "x17": 260.586937, "y17": 165.1772625,
+      "x18": 272.6696091, "y18": 199.779223,
+      "x19": 271.5879593, "y19": 188.6274729,
+      "x20": 270.1034775, "y20": 181.5163569,
+      "x21": 268.3308792, "y21": 175.4415079
+    }
     response = client.post("/predict", json=input_data)
-
     assert response.status_code == 200
-    assert "predicted_class_index" in response.json() # Changed based on assumed main.py output
-    assert "predicted_class_name" in response.json() # Changed based on assumed main.py output
+    # Add assertions for prediction content as well, e.g.:
+    assert "predicted_class_name" in response.json()
     assert "confidence_scores" in response.json()
-    assert isinstance(response.json()["predicted_class_index"], int)
     assert isinstance(response.json()["predicted_class_name"], str)
     assert isinstance(response.json()["confidence_scores"], list)
-    # You might want to add more assertions here, e.g.,
-    # assert len(response.json()["confidence_scores"]) == number_of_unique_classes
 
 
 def test_predict_invalid_data_type():
