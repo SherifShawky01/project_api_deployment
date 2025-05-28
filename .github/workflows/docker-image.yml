@@ -83,29 +83,4 @@ jobs:
         # Expose the immutable SHA tag to subsequent steps in the workflow
         echo "IMAGE_TAG=$TAG" >> $GITHUB_ENV
 
-    # ────────────────────────────────
-    # 5. Install Railway CLI (skipped if DRY_RUN is 'true')
-    # ────────────────────────────────
-    - name: Install Railway CLI
-      if: env.DRY_RUN == 'false' # This step only runs if DRY_RUN is 'false'
-      run: |
-        # Install the official Railway Command Line Interface using npm
-        npm install -g @railway/cli
-
-    # ────────────────────────────────
-    # 6. Deploy to Railway (skipped if DRY_RUN is 'true')
-    # Authentication is handled via the RAILWAY_TOKEN environment variable
-    # ────────────────────────────────
-    - name: Deploy to Railway
-      if: env.DRY_RUN == 'false' # This step only runs if DRY_RUN is 'false'
-      env:
-        RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }} # Pass the Railway API token as an environment variable
-      run: |
-        # First, set the Railway project and service context for subsequent commands
-        echo "Setting Railway context for Project: ${{ env.RAILWAY_PROJECT }}, Service: ${{ env.RAILWAY_SERVICE }}"
-        railway use --project ${{ env.RAILWAY_PROJECT }} --service ${{ env.RAILWAY_SERVICE }}
-
-        # Then, deploy the Docker image to the established context
-        # Uses the specific SHA-tagged image for deployment
-        echo "Deploying image: ${{ env.DOCKERHUB_REPO }}:${{ env.IMAGE_TAG }}"
-        railway deploy --image ${{ env.DOCKERHUB_REPO }}:${{ env.IMAGE_TAG }}
+    
