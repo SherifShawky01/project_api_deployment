@@ -1,0 +1,14 @@
+name: training-project
+prefect-version: 2.14.0
+entrypoint: model_training.py:train
+work_pool:
+  name: default
+  work_queue_name: default
+deployments:
+  - name: train-iris
+    entrypoint: model_training.py:train
+    work_pool:
+      name: default
+    parameters: {}
+    infra_overrides: {}
+    schedule: null

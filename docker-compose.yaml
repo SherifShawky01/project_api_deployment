@@ -1,0 +1,69 @@
+# docker-compose.yml
+# REMOVED: version: '3.8' - This attribute is obsolete.
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: hand-gesture-api:latest
+    container_name: hand-gesture-api-container
+    ports:
+      - "8000:8000"
+    # REMOVED: depends_on: - prometheus (Breaks the circular dependency)
+
+
+  # Your existing train and mlflow services
+  train:
+    build: training
+    ports:
+      - "4200:4200"
+    volumes:
+      - models:/mlruns
+
+  mlflow:
+    build: mlflow
+    ports:
+      - "5000:5000"
+    volumes:
+      - models:/mlruns
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus-container
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+    depends_on:
+      - app # Prometheus needs the app to be running to scrape it
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana-container
+    user: "472"
+    depends_on:
+      - prometheus
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./monitoring/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml:ro
+      - ./monitoring/dashboard.yml:/etc/grafana/provisioning/dashboards/default.yml:ro
+      - ./monitoring/dashboard.json:/etc/grafana/provisioning/dashboards/hand-gesture-api-dashboard.json:ro
+      - grafana-storage:/var/lib/grafana
+    environment:
+      - GF_DATABASE_TYPE=sqlite3
+      - GF_DATABASE_PATH=/var/lib/grafana/grafana.db
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+
+volumes:
+  models:
+  grafana-storage:
+  prometheus-data:

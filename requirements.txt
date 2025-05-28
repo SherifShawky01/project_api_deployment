@@ -1,0 +1,9 @@
+prefect
+mlflow
+scikit-learn
+numpy
+pandas
+matplotlib
+pytest>=7.4
+xgboost==2.0.3
+joblib==1.4.2
