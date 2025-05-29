@@ -1,8 +1,8 @@
-Sure! Here's your entire project documentation formatted in **Markdown**:
+
 
 ---
 
-# ✋ Hand Gesture Recognition System
+# ✋ Hand Gesture Recognition System and Maze Running
 
 This project implements a real-time **hand gesture recognition system** using machine learning, served via a RESTful API, and integrated into a web-based frontend to control external applications (e.g., a ball in a game) using specific hand gestures captured through a webcam.
 
@@ -186,7 +186,11 @@ Frontend is deployed separately (e.g., **GitHub Pages**).
 
 ## 🎬 Demo Video
 
-👉 [Click here to watch the demo]([https://www.youtube.com/watch?v=YOUR_VIDEO_ID](https://drive.google.com/drive/u/5/folders/1FTwa3P3X3M4_gW68XSk4ayNoKxF8QCm8))
+👉 [Click here to watch the demo](https://github.com/user-attachments/assets/668f40ae-f375-4405-b5bc-702a2b4eae0e))
+
+
+
+
 
 ---
 
