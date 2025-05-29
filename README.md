@@ -185,8 +185,8 @@ Frontend is deployed separately (e.g., **GitHub Pages**).
 ---
 
 ## 🎬 Demo Video
-
-👉 [Click here to watch the demo](https://github.com/user-attachments/assets/668f40ae-f375-4405-b5bc-702a2b4eae0e))
+👉
+https://github.com/user-attachments/assets/668f40ae-f375-4405-b5bc-702a2b4eae0e
 
 
 
