@@ -1,142 +1,192 @@
-# 📈 Churn Prediction API
-
-A production-ready **FastAPI** micro-service that predicts customer churn using a pre-trained scikit-learn model.  
-It ships with Docker, automated CI/CD to Docker Hub + Railway, and a minimal ML experimentation stack (MLflow).
-
-&nbsp;
-
-| Stack | Why |
-|-------|-----|
-| **Python 3.10 / FastAPI** | Fast, async-friendly REST framework |
-| **scikit-learn 1.5.1** | Trained RandomForest & DecisionTree models |
-| **Docker (+ docker-compose)** | Reproducible local + prod builds |
-| **GitHub Actions** | Test ➜ Build ➜ Push ➜ Deploy (Railway) |
-| **MLflow** | Optional experiment tracking & model registry |
+Sure! Here's your entire project documentation formatted in **Markdown**:
 
 ---
 
-## 🌐 Live demo
+# ✋ Hand Gesture Recognition System
 
-> ```text
-> https://<your-service>.railway.app
-> ```
-> Once the Railway service is **Running**, this URL becomes active.  
-> Use `/docs` for Swagger UI and `/health` for a simple health check.
+This project implements a real-time **hand gesture recognition system** using machine learning, served via a RESTful API, and integrated into a web-based frontend to control external applications (e.g., a ball in a game) using specific hand gestures captured through a webcam.
 
 ---
 
-## 📂 Repository layout
+## 🎯 Project Scope
 
-.
-├── app/ # optional package (e.g. routers, utils/)
-├── main.py # FastAPI entry point ← uvicorn main:app
-├── model.pkl # pre-trained RandomForest model
-├── Dockerfile
-├── docker-compose.yml
-├── requirements.txt
-├── tests/ # pytest tests (optional)
-└── .github/
-└── workflows/ci-cd.yml
+The primary goal is to develop an **end-to-end solution** for hand gesture recognition:
 
-yaml
-Copy
-Edit
+* **Data Collection & Model Training:**
+  Gather hand landmark data and train a robust ML model.
+
+* **Model Serving:**
+  Deploy the trained model as a RESTful API.
+
+* **Frontend Integration:**
+  Build a web interface that captures landmarks and interacts with the backend.
+
+* **Monitoring & Deployment:**
+  Monitor the system and deploy it to a cloud platform for scalability.
 
 ---
 
-## 🚀 Quick start
+## 📁 Repository Structure
 
-### 1. Local development (Python)
+This project uses a **two-repository approach** for separation of concerns:
 
-```bash
-# create and activate a venv
-python -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
+### 🔬 Research Repository
 
-pip install -r requirements.txt
-uvicorn main:app --reload          # http://127.0.0.1:8000/docs
-2. Local development (Docker)
-bash
-Copy
-Edit
-docker build -t churn-prediction .
-docker run --rm -p 8000:8000 churn-prediction
-# visit http://localhost:8000/docs
-3. Local development (docker-compose)
-bash
-Copy
-Edit
-docker compose up --build
-📡 API endpoints
-Method	Path	Description
-GET	/health	Simple JSON “ok” check
-POST	/predict	Return churn probability for one customer
-GET	/docs	Interactive Swagger UI
-GET	/redoc	Redoc documentation
+* Houses experiment scripts, notebooks, and preprocessing code.
+* Includes **MLflow** tracking for experiments.
+* Contains `model_comparison.csv` for performance insights.
 
-Predict request example
-bash
-Copy
-Edit
-curl -X POST https://<service>.railway.app/predict \
-     -H "Content-Type: application/json" \
-     -d '{
-           "CreditScore": 600,
-           "Geography": "France",
-           "Gender": "Female",
-           "Age": 40,
-           "Tenure": 5,
-           "Balance": 50000,
-           "NumOfProducts": 2,
-           "HasCrCard": 1,
-           "IsActiveMember": 1,
-           "EstimatedSalary": 70000
-         }'
-Response
+### 🚀 Production Repository (This Repository)
 
-json
-Copy
-Edit
-{
-  "prediction": 0,
-  "probability": 0.17
-}
-⚙️ Configuration
-Variable	Default	Notes
-PORT	8000 (overridden by Railway)	Listening port
-MODEL_PATH	model.pkl	Path to the pickle file
-ENV	production	Toggle extra logging, etc.
+* Focuses on production code, deployment, and monitoring.
+* Contains:
 
-🤖 CI / CD pipeline
-GitHub Action (.github/workflows/ci-cd.yml)
+  * `FastAPI` application
+  * `Dockerfile`
+  * `Unit tests`
+  * Monitoring config (Prometheus + Grafana)
 
-Install deps & (optional) run tests
+---
 
-Build image, tag :SHA and :latest
+## 🧠 Model Training & Selection
 
-Push to Docker Hub (${{ secrets.DOCKERHUB_USERNAME }}/churn-prediction)
+* Conducted in the research repo using **MLflow**.
+* Multiple models evaluated on **accuracy, precision, recall, and F1-score**.
+* **Best model**: `SVM_pipeline.pkl`, a Support Vector Machine pipeline with preprocessing.
+* Selection recorded in `model_comparison.csv`.
 
-Trigger Railway redeploy (railway redeploy)
+---
 
-Railway pulls the latest tag, injects PORT, and starts the container.
+## 🌐 Model Serving (FastAPI)
 
-🧪 Running tests
-bash
-Copy
-Edit
-pytest -q
-📚 MLflow (optional)
-bash
-Copy
-Edit
-mlflow ui          # http://localhost:5000
-# log experiments in training scripts under ./training/
-👐 Contributing
-Fork → create a feature branch (git checkout -b feature/awesome)
+A **RESTful API** is built using FastAPI:
 
-Commit + push + open a PR
+* **Endpoint:** `/predict`
 
-Make sure pytest passes and pre-commit linting is clean.
+* **Input:** JSON with 21 hand landmarks (x, y for each).
 
-📝 License
-This project is licensed under the MIT License – see LICENSE for details.
+* **Validation:** Uses **Pydantic** models.
+
+* **Model:** Loads `SVM_pipeline.pkl` and `LabelEncoder` using `joblib`.
+
+* **Response:**
+
+  * Predicted gesture
+  * Confidence scores for all classes
+
+* **CORS:** Enabled for cross-origin access from the frontend.
+
+---
+
+## 🧪 Unit Testing
+
+Tests are located in `tests/test_main.py` (or `test_main.py` in root):
+
+* Tests for `/`, `/health`, and `/predict`.
+* Covers:
+
+  * Valid/invalid input handling
+  * Model loading
+  * Output structure and response values
+
+---
+
+## 🐳 Containerization (Docker)
+
+The application is **containerized** using Docker:
+
+### `Dockerfile` Includes:
+
+* Base Python image
+* App code & dependencies
+* `requirements.txt` installation
+* Port exposure
+* Command to run app via **uvicorn**
+
+---
+
+## 📊 Monitoring Metrics
+
+Key metrics are monitored via **Prometheus** and **Grafana**:
+
+### 🔍 1. Model Metric: Prediction Confidence
+
+* **Why:** Measures live model reliability.
+* **How:** Log confidence scores from `/predict`.
+
+### 📉 2. Data Metric: Input Distribution Drift
+
+* **Why:** Detects changes in incoming hand landmark patterns.
+* **How:** Track stats (mean, variance) of specific coordinates.
+
+### 🚀 3. Server Metric: Request Latency
+
+* **Why:** Indicates API responsiveness.
+* **How:** Expose request durations via FastAPI's metrics.
+
+---
+
+## 📈 System Monitoring Setup
+
+Orchestrated using **Docker Compose**:
+
+### `docker-compose.yaml`:
+
+* Defines:
+
+  * FastAPI app
+  * Prometheus
+  * Grafana
+
+### Monitoring Files:
+
+* `monitoring/prometheus.yml`: Prometheus targets
+* `monitoring/datasource.yml`: Grafana-Prometheus link
+* `monitoring/dashboard.yml` or `.json`: Dashboard setup
+
+📸 **Grafana Dashboard Screenshot:**
+*(Insert screenshot showing Prediction Confidence, Input Drift, and Latency)*
+
+---
+
+## 🚀 Deployment (CI/CD)
+
+Uses **GitHub Actions** to automate build and deploy:
+
+### `.github/workflows/docker-image.yml`:
+
+* Builds Docker image
+* Pushes to container registry (e.g., Docker Hub)
+* Deploys to cloud (e.g., Railway.app)
+
+Frontend is deployed separately (e.g., **GitHub Pages**).
+
+---
+
+## 💻 Frontend Integration
+
+### Key Files:
+
+#### `api-call.js`
+
+* Captures landmarks via **MediaPipe**.
+* Sends POST request to `/predict` with flattened landmarks.
+* Receives predicted gesture and maps it to arrow keys.
+
+#### `mp.js`
+
+* Handles webcam feed and MediaPipe setup.
+* Calls `getPredictedLabel()` from `api-call.js`.
+
+#### `keyboard.js`
+
+* Simulates key events (`triggerArrowKey`) to control in-game actions.
+
+---
+
+## 🎬 Demo Video
+
+👉 [Click here to watch the demo]([https://www.youtube.com/watch?v=YOUR_VIDEO_ID](https://drive.google.com/drive/u/5/folders/1FTwa3P3X3M4_gW68XSk4ayNoKxF8QCm8))
+
+---
+
